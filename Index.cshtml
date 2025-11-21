@@ -1,0 +1,35 @@
+@section Styles {
+    <link rel="stylesheet" href="~/css/welcome.css" />
+}
+
+<div class="welcome-wrapper">
+
+    <div class="doll-column">
+        <img src="~/img/matrioshka.png" class="doll-img" alt="Matrioshka">
+    </div>
+
+    <div class="login-column">
+        <div class="welcome-container">
+            <h1>Matrioshka's Booking</h1>
+
+            <div class="login-box">
+                <h2>Welcome User! :)</h2>
+
+                <form method="post" asp-action="Login">
+                    <label>User's Name:</label>
+                    <input type="text" name="username" />
+
+                    <label>Password:</label>
+                    <input type="password" name="password" />
+
+                    <div class="button-row">
+                        <button type="submit" name="role" value="client">Sign as Client</button>
+                        <button type="submit" name="role" value="admin">Sign as Admin</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+</div>
