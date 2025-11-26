@@ -1,34 +1,111 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
 using MatrioshkaBookingSystem.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
-public class HotelController : Controller
+namespace MatrioshkaBookingSystem.Controllers
 {
-    // Este campo guarda la referencia al DbContext.
-    // El DbContext es tu puente mágico hacia MySQL:
-    // con él podés leer tablas, insertar, actualizar, eliminar, etc.
-    private readonly BookingDbContext _context;
-
-    // Constructor del controlador.
-    // ASP.NET se encarga de "inyectar" (dependency injection)
-    // una instancia lista del BookingDbContext cuando este controlador se crea.
-    public HotelController(BookingDbContext context)
+    public class HomeController : Controller
     {
-        // Guardamos el DbContext en la variable _context
-        // para usarlo en cualquier acción de este controlador.
-        _context = context;
-    }
+        private readonly ILogger<HomeController> _logger;
+        private readonly BookingDbContext _context;
 
-    // Acción principal: responde a /Hotel o /Hotel/Index
-    public IActionResult Index()
-    {
-        // _context.Hotels representa la tabla "Hotels" de tu base de datos.
-        // .ToList() ejecuta una consulta SQL detrás de escena:
-        //      SELECT * FROM Hotels;
-        // Y convierte cada fila en un objeto C# tipo Hotel.
-        var hoteles = _context.Hotels.ToList();
+        public HomeController(ILogger<HomeController> logger, BookingDbContext context)
+        {
+            _logger = logger;
+            _context = context;
+        }
 
-        // Enviamos la lista de hoteles a la vista "Index.cshtml".
-        // La vista podrá iterar sobre el modelo y mostrar datos al usuario.
-        return View(hoteles);
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Login(string username, string password)
+        {
+            var user = _context.Users
+                .Include(u => u.Roles)
+                .FirstOrDefault(u => u.Username == username && u.UserPassword == password);
+            if (user == null)
+            {
+                ViewBag.Error = "Wrong username or password!";
+                return View("Index");
+            }
+
+            var userRoleName = user.Roles.FirstOrDefault()?.RoleName;
+
+            if (userRoleName == null)
+            {
+                ViewBag.Error = "User has no roles assigned!";
+                return View("Index");
+            }
+
+            if (userRoleName == "Admin")
+                return RedirectToAction("Admins", "Admin");
+
+            if (userRoleName == "Client")
+                return RedirectToAction("Clients", "Home");
+
+            ViewBag.Error = "Invalid role.";
+            return View("Index");
+        }
+
+
+
+        public IActionResult Admins()
+        {
+            var vm = new AdminViewModel
+            {
+                Users = _context.Users.ToList(),
+                Hotels = _context.Hotels.ToList()
+            };
+
+            return View();
+        }
+
+
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Register(string firstName, string lastName, string email, string phone,
+                              string username, string password, string role)
+        {
+            User newUser = new User
+            {
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,
+                Phone = phone,
+                Username = username,
+                UserPassword = password,
+                Roles = new List<Role>()
+            };
+
+            _context.Users.Add(newUser);
+            _context.SaveChanges();
+
+            var selectedRole = _context.Roles.FirstOrDefault(r => r.RoleName == role);
+
+            if (selectedRole != null)
+            {
+                newUser.Roles.Add(selectedRole);
+                _context.SaveChanges();
+            }
+
+            return RedirectToAction("Index");
+        }
+
+
+
     }
 }
